@@ -11,6 +11,7 @@ void display(const vector<float>& vec1) {
     }
 }
 
+// Для каждого столбца j мы зануляем элементы под главной диагональю, вычитая строки
 void forwardMotion(vector<vector<float>>& coefficients, vector<float>& known) {
     float p, q, r;
     for (int j = 0; j < 3; j++) {
@@ -27,18 +28,20 @@ void forwardMotion(vector<vector<float>>& coefficients, vector<float>& known) {
     }
 }
 
+// Зануляет элементы над главной диагональю, тем самым получая диагональную матрицу
 void backMotion(vector<vector<float>>& coefficients, vector<float>& known) {
     float p, r;
     for (int j = 3; j >= 0; --j) {
         p = coefficients[j][j];
         for (int i = j - 1; i >= 0; --i) {
             r = coefficients[i][j];
-            known[i] -= r / p * known[j];
+            known[i] -= r / p * known[j]; // обновляем known
             coefficients[i][j] = 0;
         }
     }
 }
 
+// Для каждого столбца ищет строку с максимальным по модулю элементом в этом столбце и меняет её с текущей строкой
 void mainElements(vector<vector<float>>& coefficients, vector<float>& known) {
     int maxInd = 0;
     for (int i = 0; i < coefficients.size(); i++) {
@@ -50,18 +53,22 @@ void mainElements(vector<vector<float>>& coefficients, vector<float>& known) {
     }
 }
 
+// Объединяет все шаги решения системы методом Гаусса
 vector<float> gaus(vector<vector<float>> coefficients, vector<float> known) {
     mainElements(coefficients, known);
     forwardMotion(coefficients, known);
     backMotion(coefficients, known);
     for (int i = 0; i < 4; i++) {
-        known[i] /= coefficients[i][i];
+        known[i] /= coefficients[i][i]; // делим значения known[i] на диагональные элементы, чтобы получить решения
     }
     return known;
 }
 
+// Метод простой итерации(переписывает систему уравнений в виде x = C*x + f)
 vector<float> simpleIt(vector<vector<float>> coefficients, vector<float> known, float e = 0.001) {
     mainElements(coefficients, known);
+
+    // создаём матрицу C для итерационного процесса
     vector<vector<float>> C(4, vector<float>(4, 0));
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -70,36 +77,37 @@ vector<float> simpleIt(vector<vector<float>> coefficients, vector<float> known, 
             }
         }
     }
+
+    // вектор f для итераций — правая часть, делённая на диагональные элементы
     vector<float> f;
     f.reserve(known.size());
     for (int i = 0; i < known.size(); i++) {
         f.push_back(known[i] / coefficients[i][i]);
     }
     int epsCount;
-    vector<float> x = { 0,0,0,0 };
+    vector<float> x = { 0,0,0,0 }; // начальное приближение(все нули)
     cout<<"N"<<"|\t"<<"x1"<<"\t|\t\t"<<"x2"<<"\t|\t\t"<<"x3"<<"\t|\t\t"<<"x4"<<"\t|\t\t"<<"e"<<"\t|\t"<<endl;
     int K=0;
     while (true) {
-        vector<float> x_prev = x; // Сохраняем предыдущие значения x
+        vector<float> x_prev = x; // сохраняем предыдущие значения x
         for (int i = 0; i < 4; i++) {
-            x[i] = f[i]; // Сначала устанавливаем значения f
+            x[i] = f[i]; // сначала устанавливаем значения f
             for (int j = 0; j < 4; j++) {
                 if (i != j) {
-                    x[i] += C[i][j] * x_prev[j]; // Добавляем элементы матрицы C, умноженные на предыдущие значения x
+                    x[i] += C[i][j] * x_prev[j]; // добавляем элементы матрицы C, умноженные на предыдущие значения x
                 }
             }
         }
         epsCount = 0;
         for (int i = 0; i < 4; i++) {
             if (abs(x[i] - x_prev[i]) < e) {
-                epsCount++; // Проверяем сходимость итераций
+                epsCount++; // проверяем сходимость итераций
             }
         }
         for(int i=0;i<1;i++){
-         cout<<K<<fixed << setprecision(3) <<"|\t"<<x[0]<<"\t|\t\t"<<x[1]<<"\t|\t\t"<<x[2]<<"\t|\t\t"<<x[3]<<"\t|\t\t"<<e<<"\t|\t"<<endl;
+         cout << K <<fixed << setprecision(3) <<"|\t"<<x[0]<<"\t|\t\t"<<x[1]<<"\t|\t\t"<<x[2]<<"\t|\t\t"<<x[3]<<"\t|\t\t"<<e<<"\t|\t"<<endl;
          }
         if (epsCount == 4) {
-          
             return x;
         }
         K++;
